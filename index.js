@@ -3,13 +3,13 @@ var CronJob = require('cron').CronJob;
 var request = require('request');
 var fs = require('fs');
 
-var deep = require('deep-diff')
-
 var config = require('./config');
 var token = config.botToken;
 
 var steamStatusUrl = 'https://steamgaug.es/api/v2';
-//var steamStatusUrl = 'http://pastebin.com/raw/Z97FbpsX';
+//var steamStatusUrl = 'http://pastebin.com/raw/Z97FbpsX'; // for testing purposes
+
+var oldStatus = '';
 
 var redis = require("redis");
 var client = redis.createClient();
@@ -68,42 +68,46 @@ function requestSteamStatusUpdate() {
 
 function compareResults(data) {
     var offline = [];
-    if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
-        Object.keys(data).forEach(function(element) {
-            if (typeof data[element].online !== 'undefined') {
-                if (data[element].online !== 1) {
-                    offline.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
-                }
-            } else {
-                if (element == 'ISteamGameCoordinator') {
-                    Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
-                        if (data['ISteamGameCoordinator'][element].online !== 1) {
-                            offline.push('GC ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
-                        }
-                    });
-                }
-            }
-        });
-    }
+    if (oldStatus == '' || (oldStatus != '' && JSON.stringify(data) != oldStatus)) { // if oldStatus is on first run or current data is different from old status
+        oldStatus = JSON.stringify(data);
 
-    if (offline.length > 0) { // something is offline
-        var offlineMsg = offline.join("\n");
-
-        // get list of subscribers
-        client.hgetall('subscriptions', function(err, result) {
-            if (err) {
-                console.log('[redis]: ' + err);
-                return;
-            }
-
-            if (result !== null) { // if there are subscribers
-                if (Object.keys(result).length > 0) {
-                    Object.keys(result).forEach(function(element) {
-                        bot.sendMessage(element, offlineMsg);
-                    });
+        if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
+            Object.keys(data).forEach(function(element) {
+                if (typeof data[element].online !== 'undefined') {
+                    if (data[element].online !== 1) {
+                        offline.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
+                    }
+                } else {
+                    if (element == 'ISteamGameCoordinator') {
+                        Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
+                            if (data['ISteamGameCoordinator'][element].online !== 1) {
+                                offline.push('GC ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                            }
+                        });
+                    }
                 }
-            }
-        });
+            });
+        }
+
+        if (offline.length > 0) { // something is offline
+            var offlineMsg = offline.join("\n");
+
+            // get list of subscribers
+            client.hgetall('subscriptions', function(err, result) {
+                if (err) {
+                    console.log('[redis]: ' + err);
+                    return;
+                }
+
+                if (result !== null) { // if there are subscribers
+                    if (Object.keys(result).length > 0) {
+                        Object.keys(result).forEach(function(element) {
+                            bot.sendMessage(element, offlineMsg);
+                        });
+                    }
+                }
+            });
+        }
     }
 }
 

@@ -1,6 +1,12 @@
 # node-telegram-steamstatusbot
 A Telegram bot that informs you when Steam or any Game Coordinator is down.
 
+# Bot
+- [Telegram](http://telegram.me/steamstatus_bot)
+- [Bot store](https://storebot.me/bot/steamstatus_bot)
+
+# Credits
+- [Jessecar96](https://github.com/Jessecar96) for creating [Steam Gauges](https://steamgaug.es/) and having an API.
 
 # LICENSE
 The MIT License (MIT)
