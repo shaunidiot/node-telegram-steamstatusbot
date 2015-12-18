@@ -1,6 +1,6 @@
 {
     "name": "node-telegram-steamstatusbot",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "A Telegram bot that informs you when Steam is down.",
     "main": "index.js",
     "scripts": {

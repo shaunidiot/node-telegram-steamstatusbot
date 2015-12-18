@@ -81,7 +81,6 @@ function compareResults(data) {
     var messages = [];
 
     if (oldStatus == '') {
-        console.log('Old status empty');
         if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
             Object.keys(data).forEach(function(element) {
                 if (typeof data[element].online !== 'undefined') {
@@ -89,21 +88,18 @@ function compareResults(data) {
                         messages.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
                     }
                 } else {
-                    switch (element) {
-                        case 'ISteamGameCoordinator':
+                    if (element == 'ISteamGameCoordinator') {
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
                             if (data['ISteamGameCoordinator'][element].online != 1) {
                                 messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
                             }
                         });
-                        break;
-                        case 'IEconItems':
+                    } else if (element == 'IEconItems') {
                         Object.keys(data['IEconItems']).forEach(function(element) {
                             if (data['IEconItems'][element].online != 1) {
                                 messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
                             }
                         });
-                        break;
                     }
                 }
             });
@@ -146,7 +142,7 @@ function compareResults(data) {
 
     if (messages.length > 0) { // something is offline
         var offlineMsg = messages.join("\n");
-        console.log(offlineMsg);
+        
         // get list of subscribers
         client.hgetall('subscriptions', function(err, result) {
             if (err) {
