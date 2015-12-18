@@ -74,6 +74,9 @@ bot.on('message', function(msg) {
             case '/status':
             sendSteamStatuses(msg.chat.id);
             break;
+            case '/ping':
+            bot.sendMessage(msg.chat.id, 'pong');
+            break;
         }
 
     }
