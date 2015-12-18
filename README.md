@@ -1,6 +1,15 @@
 # node-telegram-steamstatusbot
 A Telegram bot that informs you when Steam or any Game Coordinator is down.
 
+# Requirement
+- [redis](http://redis.io/)
+- [nodejs](https://nodejs.org/)
+
+# Usage
+- `git clone <git url>`
+- `npm install`
+- `node index.js`
+
 # Bot
 - [Telegram](http://telegram.me/steamstatus_bot)
 - [Bot store](https://storebot.me/bot/steamstatus_bot)

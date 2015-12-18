@@ -42,9 +42,22 @@ bot.getMe().then(function(me) {
 });
 
 bot.on('message', function(msg) {
-    if (msg.text) {
-        var chatId = msg.chat.id;
-        console.log('[Chat] @' + msg.chat.username + ': ' + msg.text);
+    if (typeof msg.text !== 'undefined' && msg.text) {
+
+        if (msg.from.id == config.adminId) {
+            if (msg.text.indexOf('/announce ') >= 0) {
+                var annMsg = msg.text.replace('/announce ', '');
+                broadcast(annMsg);
+                return;
+            }
+        }
+
+        if (typeof msg.from.username !== 'undefined') {
+            console.log('[Chat] @' + msg.from.username + ': ' + msg.text);
+        } else {
+            console.log('[Chat] @' + msg.from.first_name + ': ' + msg.text);
+        }
+
         switch (msg.text.toLowerCase().trim()) {
             case '/subscribe':
             subscribe(msg);
@@ -53,15 +66,58 @@ bot.on('message', function(msg) {
             unsubscribe(msg);
             break;
             case '/start':
-            bot.sendMessage(chatId, 'Type /subscribe to begin.');
+            bot.sendMessage(msg.chat.id, 'Type /subscribe to begin.');
             break;
             case '/users':
-            getTotalUsersCount(chatId);
+            getTotalUsersCount(msg.chat.id);
+            break;
+            case '/status':
+            sendSteamStatuses(msg.chat.id);
             break;
         }
 
     }
 });
+
+function sendSteamStatuses(chatId) {
+    var messages = [];
+    if (oldStatus != '') {
+        var data = JSON.parse(oldStatus);
+        if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
+            Object.keys(data).forEach(function(element) {
+                if (typeof data[element].online !== 'undefined') {
+                    if (data[element].online == 2) {
+                        messages.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
+                    } else if (data[element].online == 1) {
+                        messages.push(element + ' is online.');
+                    }
+                } else {
+                    if (element == 'ISteamGameCoordinator') {
+                        Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
+                            if (data['ISteamGameCoordinator'][element].online == 2) {
+                                messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                            } else if (data['ISteamGameCoordinator'][element].online == 1) {
+                                messages.push('GameCoordinator for ' + element + ' is online.');
+                            }
+                        });
+                    } else if (element == 'IEconItems') {
+                        Object.keys(data['IEconItems']).forEach(function(element) {
+                            if (data['IEconItems'][element].online == 2) {
+                                messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
+                            } else if (data['IEconItems'][element].online == 1) {
+                                messages.push('IEconItems for ' + element + ' is online.');
+                            }
+                        });
+                    }
+                }
+            });
+
+            if (messages.length > 0) {
+                bot.sendMessage(chatId, messages.join("\n"));
+            }
+        }
+    }
+}
 
 function requestSteamStatusUpdate() {
     request({
@@ -161,6 +217,23 @@ function compareResults(data) {
     }
 }
 
+function broadcast(message) {
+    client.hgetall('subscriptions', function(err, result) {
+        if (err) {
+            console.log('[redis]: ' + err);
+            return;
+        }
+
+        if (result !== null) { // if there are subscribers
+            if (Object.keys(result).length > 0) {
+                Object.keys(result).forEach(function(element) {
+                    bot.sendMessage(element, message);
+                });
+            }
+        }
+    });
+}
+
 function getTotalUsersCount(chatId) {
     client.hgetall('subscriptions', function(err, result) {
         if (err) {
@@ -183,7 +256,7 @@ function subscribe(msg) {
         } else {
             client.hset("subscriptions", msg.chat.id, '', function(error, result) {
                 if (error) {
-                    bot.sendMessage(msg.chat.id, error + "|" + response);
+                    bot.sendMessage(msg.chat.id, 'Error subscribing. Contact admin: ' + error);
                     return;
                 }
                 bot.sendMessage(msg.chat.id, 'Subscribed to Steam status updates.');
@@ -195,7 +268,7 @@ function subscribe(msg) {
 function unsubscribe(msg) {
     client.hdel("subscriptions", msg.chat.id, function(error, response) {
         if (error) {
-            bot.sendMessage(msg.chat.id, 'Unable to unsubscribed to updates: ' + error);
+            bot.sendMessage(msg.chat.id, 'Error unsubscribing. Contact admin: ' + error);
             return;
         }
         bot.sendMessage(msg.chat.id, 'Unsubscribed to Steam status updates.');
