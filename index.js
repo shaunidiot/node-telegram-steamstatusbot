@@ -84,19 +84,19 @@ function compareResults(data) {
         if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
             Object.keys(data).forEach(function(element) {
                 if (typeof data[element].online !== 'undefined') {
-                    if (data[element].online != 1) {
+                    if (data[element].online == 2) {
                         messages.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
                     }
                 } else {
                     if (element == 'ISteamGameCoordinator') {
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
-                            if (data['ISteamGameCoordinator'][element].online != 1) {
+                            if (data['ISteamGameCoordinator'][element].online == 2) {
                                 messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
                             }
                         });
                     } else if (element == 'IEconItems') {
                         Object.keys(data['IEconItems']).forEach(function(element) {
-                            if (data['IEconItems'][element].online != 1) {
+                            if (data['IEconItems'][element].online == 2) {
                                 messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
                             }
                         });
@@ -142,7 +142,7 @@ function compareResults(data) {
 
     if (messages.length > 0) { // something is offline
         var offlineMsg = messages.join("\n");
-        
+
         // get list of subscribers
         client.hgetall('subscriptions', function(err, result) {
             if (err) {
