@@ -7,9 +7,16 @@ var config = require('./config');
 var token = config.botToken;
 
 var steamStatusUrl = 'https://steamgaug.es/api/v2';
-//var steamStatusUrl = 'http://pastebin.com/raw/Z97FbpsX'; // for testing purposes
 
 var oldStatus = '';
+
+var statusFile = './status.json';
+try {
+    fs.ensureFileSync(statusFile);
+    oldStatus = fs.readFileSync(statusFile, {encoding: 'utf8'});
+} catch(error) {
+    oldStatus = '';
+}
 
 var redis = require("redis");
 var client = redis.createClient();
@@ -27,6 +34,7 @@ var bot = new TelegramBot(token, {
 new CronJob('*/5 * * * *', function() { // every 5 minutes
     requestSteamStatusUpdate();
 }, null, true, 'America/Los_Angeles');
+
 
 bot.getMe().then(function(me) {
     console.log('[Bot] ' + me.username + ' logged in successfully.');
@@ -47,6 +55,9 @@ bot.on('message', function(msg) {
             case '/start':
             bot.sendMessage(chatId, 'Type /subscribe to begin.');
             break;
+            case '/users':
+            getTotalUsersCount(chatId);
+            break;
         }
 
     }
@@ -56,7 +67,7 @@ function requestSteamStatusUpdate() {
     request({
         url: steamStatusUrl
     }, function(erorr, response, body) {
-        fs.writeFile('./status.json', body, function(err) {
+        fs.writeFile(statusFile, body, function(err) {
             if(err) {
                 return console.log(err);
             }
@@ -67,48 +78,106 @@ function requestSteamStatusUpdate() {
 }
 
 function compareResults(data) {
-    var offline = [];
-    if (oldStatus == '' || (oldStatus != '' && JSON.stringify(data) != oldStatus)) { // if oldStatus is on first run or current data is different from old status
-        oldStatus = JSON.stringify(data);
+    var messages = [];
 
+    if (oldStatus == '') {
+        console.log('Old status empty');
         if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
             Object.keys(data).forEach(function(element) {
                 if (typeof data[element].online !== 'undefined') {
-                    if (data[element].online !== 1) {
-                        offline.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
+                    if (data[element].online != 1) {
+                        messages.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
                     }
                 } else {
-                    if (element == 'ISteamGameCoordinator') {
+                    switch (element) {
+                        case 'ISteamGameCoordinator':
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
-                            if (data['ISteamGameCoordinator'][element].online !== 1) {
-                                offline.push('GC ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                            if (data['ISteamGameCoordinator'][element].online != 1) {
+                                messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                            }
+                        });
+                        break;
+                        case 'IEconItems':
+                        Object.keys(data['IEconItems']).forEach(function(element) {
+                            if (data['IEconItems'][element].online != 1) {
+                                messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
+                            }
+                        });
+                        break;
+                    }
+                }
+            });
+        }
+    } else if (oldStatus != '' && JSON.stringify(data) != oldStatus) {
+        var oldResults = JSON.parse(oldStatus);
+        if (typeof data.ISteamClient !== 'undefined' && typeof oldResults.ISteamClient !== 'undefined') { // make sure everything is okay
+            Object.keys(data).forEach(function(element) {
+
+                if (typeof data[element].online !== 'undefined' && typeof oldResults[element].online !== 'undefined') {
+                    if (oldResults[element].online == 1 && data[element].online == 2) {
+                        messages.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
+                    } else if (oldResults[element].online == 2 && data[element].online == 1) {
+                        messages.push(element + ' is back online.');
+                    }
+                } else {
+                    if (element =='ISteamGameCoordinator') {
+                        Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
+                            if (oldResults['ISteamGameCoordinator'][element].online == 1 && data['ISteamGameCoordinator'][element].online == 2) {
+                                messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                            } else if (oldResults['ISteamGameCoordinator'][element].online == 2 && data['ISteamGameCoordinator'][element].online == 1) {
+                                messages.push('GameCoordinator for ' + element + ' is back online.');
+                            }
+                        });
+                    } else if (element == 'IEconItems') {
+                        Object.keys(data['IEconItems']).forEach(function(element) {
+                            if (oldResults['IEconItems'][element].online == 1 && data['IEconItems'][element].online == 2) {
+                                messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
+                            } else if (oldResults['IEconItems'][element].online == 2 && data['IEconItems'][element].online == 1) {
+                                messages.push('IEconItems for ' + element + ' is back online.');
                             }
                         });
                     }
                 }
             });
         }
-
-        if (offline.length > 0) { // something is offline
-            var offlineMsg = offline.join("\n");
-
-            // get list of subscribers
-            client.hgetall('subscriptions', function(err, result) {
-                if (err) {
-                    console.log('[redis]: ' + err);
-                    return;
-                }
-
-                if (result !== null) { // if there are subscribers
-                    if (Object.keys(result).length > 0) {
-                        Object.keys(result).forEach(function(element) {
-                            bot.sendMessage(element, offlineMsg);
-                        });
-                    }
-                }
-            });
-        }
     }
+
+    oldStatus = JSON.stringify(data);
+
+    if (messages.length > 0) { // something is offline
+        var offlineMsg = messages.join("\n");
+        console.log(offlineMsg);
+        // get list of subscribers
+        client.hgetall('subscriptions', function(err, result) {
+            if (err) {
+                console.log('[redis]: ' + err);
+                return;
+            }
+
+            if (result !== null) { // if there are subscribers
+                if (Object.keys(result).length > 0) {
+                    Object.keys(result).forEach(function(element) {
+                        bot.sendMessage(element, offlineMsg);
+                    });
+                }
+            }
+        });
+    }
+}
+
+function getTotalUsersCount(chatId) {
+    client.hgetall('subscriptions', function(err, result) {
+        if (err) {
+            console.log('[redis]: ' + err);
+            return;
+        }
+
+        if (result !== null) { // if there are subscribers
+            if (Object.keys(result).length > 0) {
+                bot.sendMessage(chatId, Object.keys(result).length + ' total subscribers.');
+            }
+        }
+    });
 }
 
 function subscribe(msg) {
