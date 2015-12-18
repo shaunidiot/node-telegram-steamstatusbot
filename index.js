@@ -50,6 +50,12 @@ bot.on('message', function(msg) {
                 broadcast(annMsg);
                 return;
             }
+
+            switch (msg.text.toLowerCase().trim()) {
+                case '/users':
+                getTotalUsersCount(msg.chat.id);
+                break;
+            }
         }
 
         if (typeof msg.from.username !== 'undefined') {
@@ -68,9 +74,6 @@ bot.on('message', function(msg) {
             case '/start':
             bot.sendMessage(msg.chat.id, 'Type /subscribe to begin.');
             break;
-            case '/users':
-            getTotalUsersCount(msg.chat.id);
-            break;
             case '/status':
             sendSteamStatuses(msg.chat.id);
             break;
@@ -78,7 +81,6 @@ bot.on('message', function(msg) {
             bot.sendMessage(msg.chat.id, 'pong');
             break;
         }
-
     }
 });
 
@@ -98,17 +100,17 @@ function sendSteamStatuses(chatId) {
                     if (element == 'ISteamGameCoordinator') {
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
                             if (data['ISteamGameCoordinator'][element].online == 2) {
-                                messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
                             } else if (data['ISteamGameCoordinator'][element].online == 1) {
-                                messages.push('GameCoordinator for ' + element + ' is online.');
+                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is online.');
                             }
                         });
                     } else if (element == 'IEconItems') {
                         Object.keys(data['IEconItems']).forEach(function(element) {
                             if (data['IEconItems'][element].online == 2) {
-                                messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
+                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
                             } else if (data['IEconItems'][element].online == 1) {
-                                messages.push('IEconItems for ' + element + ' is online.');
+                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is online.');
                             }
                         });
                     }
@@ -150,13 +152,13 @@ function compareResults(data) {
                     if (element == 'ISteamGameCoordinator') {
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
                             if (data['ISteamGameCoordinator'][element].online == 2) {
-                                messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
                             }
                         });
                     } else if (element == 'IEconItems') {
                         Object.keys(data['IEconItems']).forEach(function(element) {
                             if (data['IEconItems'][element].online == 2) {
-                                messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
+                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
                             }
                         });
                     }
@@ -167,7 +169,6 @@ function compareResults(data) {
         var oldResults = JSON.parse(oldStatus);
         if (typeof data.ISteamClient !== 'undefined' && typeof oldResults.ISteamClient !== 'undefined') { // make sure everything is okay
             Object.keys(data).forEach(function(element) {
-
                 if (typeof data[element].online !== 'undefined' && typeof oldResults[element].online !== 'undefined') {
                     if (oldResults[element].online == 1 && data[element].online == 2) {
                         messages.push(element + ' is offline. ' + ((typeof data[element].error !== 'undefined') ? data[element].error : ''));
@@ -178,17 +179,17 @@ function compareResults(data) {
                     if (element =='ISteamGameCoordinator') {
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
                             if (oldResults['ISteamGameCoordinator'][element].online == 1 && data['ISteamGameCoordinator'][element].online == 2) {
-                                messages.push('GameCoordinator for ' + element + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
+                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is offline. ' + ((typeof data['ISteamGameCoordinator'][element].error !== 'undefined') ? data['ISteamGameCoordinator'][element].error : ''));
                             } else if (oldResults['ISteamGameCoordinator'][element].online == 2 && data['ISteamGameCoordinator'][element].online == 1) {
-                                messages.push('GameCoordinator for ' + element + ' is back online.');
+                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is back online.');
                             }
                         });
                     } else if (element == 'IEconItems') {
                         Object.keys(data['IEconItems']).forEach(function(element) {
                             if (oldResults['IEconItems'][element].online == 1 && data['IEconItems'][element].online == 2) {
-                                messages.push('IEconItems for ' + element + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
+                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is offline. ' + ((typeof data['IEconItems'][element].error !== 'undefined') ? data['IEconItems'][element].error : ''));
                             } else if (oldResults['IEconItems'][element].online == 2 && data['IEconItems'][element].online == 1) {
-                                messages.push('IEconItems for ' + element + ' is back online.');
+                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is back online.');
                             }
                         });
                     }
@@ -276,4 +277,11 @@ function unsubscribe(msg) {
         }
         bot.sendMessage(msg.chat.id, 'Unsubscribed to Steam status updates.');
     });
+}
+
+function getGameNameFromId(id) {
+    if (typeof config.games[id] !== 'undefined') {
+        return config.games[id];
+    }
+    return id;
 }
