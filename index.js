@@ -1,7 +1,7 @@
 var TelegramBot = require('node-telegram-bot-api');
 var CronJob = require('cron').CronJob;
 var request = require('request');
-var fs = require('fs');
+var fs = require('fs-extra');
 
 var config = require('./config');
 var token = config.botToken;
