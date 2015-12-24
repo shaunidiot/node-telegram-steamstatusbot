@@ -92,7 +92,7 @@ function sendSteamStatuses(chatId) {
             Object.keys(data).forEach(function(element) {
                 if (typeof data[element].online !== 'undefined') {
                     if (data[element].online == 2) {
-                        messages.push(element + ' is offline.';
+                        messages.push(element + ' is *offline*.';
                     } else if (data[element].online == 1) {
                         messages.push(element + ' is online.');
                     }
@@ -100,7 +100,7 @@ function sendSteamStatuses(chatId) {
                     if (element == 'ISteamGameCoordinator') {
                         Object.keys(data['ISteamGameCoordinator']).forEach(function(element) {
                             if (data['ISteamGameCoordinator'][element].online == 2) {
-                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is offline. ');
+                                messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is *offline*. ');
                             } else if (data['ISteamGameCoordinator'][element].online == 1) {
                                 messages.push('GameCoordinator for ' + getGameNameFromId(element) + ' is online.');
                             }
@@ -108,7 +108,7 @@ function sendSteamStatuses(chatId) {
                     } else if (element == 'IEconItems') {
                         Object.keys(data['IEconItems']).forEach(function(element) {
                             if (data['IEconItems'][element].online == 2) {
-                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is offline. ');
+                                messages.push('IEconItems for ' + getGameNameFromId(element) + ' is *offline*. ');
                             } else if (data['IEconItems'][element].online == 1) {
                                 messages.push('IEconItems for ' + getGameNameFromId(element) + ' is online.');
                             }
@@ -118,7 +118,9 @@ function sendSteamStatuses(chatId) {
             });
 
             if (messages.length > 0) {
-                bot.sendMessage(chatId, messages.join("\n"));
+                bot.sendMessage(chatId, messages.join("\n"), {
+                    parse_mode: 'markdown'
+                });
             }
         }
     }
