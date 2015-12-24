@@ -92,7 +92,7 @@ function sendSteamStatuses(chatId) {
             Object.keys(data).forEach(function(element) {
                 if (typeof data[element].online !== 'undefined') {
                     if (data[element].online == 2) {
-                        messages.push(element + ' is *offline*.';
+                        messages.push(element + ' is *offline*.');
                     } else if (data[element].online == 1) {
                         messages.push(element + ' is online.');
                     }
