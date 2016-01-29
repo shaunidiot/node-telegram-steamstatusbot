@@ -123,32 +123,46 @@ function sendSteamStatuses(chatId) {
                 messages.push('\n\nLast checked: ' + fileInfo.mtime);
                 bot.sendMessage(chatId, messages.join("\n"), {
                     parse_mode: 'markdown'
+                }).then(function(result) {
+                }).catch(function(error) {
+                    console.log(error);
                 });
             }
+        } else {
+            console.log('Something wrong with json at [sendSteamStatuses]');
         }
+    } else {
+        // need to get new data
+        console.log('TODO: Need to get new data :/');
     }
 }
 
 function requestSteamStatusUpdate() {
     request({
         url: steamStatusUrl
-    }, function(erorr, response, body) {
+    }, function(error, response, body) {
+        if (error) {
+            console.log(error);
+            return;
+        }
         fs.writeFile(statusFile, body, function(err) {
             if(err) {
                 return console.log(err);
             }
             console.log("[status.json] The file was saved!");
-            compareResults(JSON.parse(body));
+            compareResults(body);
         });
     });
 }
 
 function compareResults(data) {
+    console.log('Comparing results');
     var messages = [];
 
     if (isValidJson(data)) {
+        var data = JSON.parse(data);
         if (oldStatus === '') {
-            if (typeof data.ISteamClient !== 'undefined') { // make sure everything is okay
+            if (typeof data['ISteamClient'] !== 'undefined') { // make sure everything is okay
                 Object.keys(data).forEach(function(element) {
                     if (typeof data[element].online !== 'undefined') {
                         if (data[element].online == 2) {
@@ -170,10 +184,12 @@ function compareResults(data) {
                         }
                     }
                 });
+            } else {
+                console.log('json fucked up [compareResults]');
             }
         } else if (oldStatus !== '' && JSON.stringify(data) != oldStatus) {
             var oldResults = JSON.parse(oldStatus);
-            if (typeof data.ISteamClient !== 'undefined' && typeof oldResults.ISteamClient !== 'undefined') { // make sure everything is okay
+            if (typeof data['ISteamClient'] !== 'undefined' && typeof oldResults['ISteamClient'] !== 'undefined') { // make sure everything is okay
                 Object.keys(data).forEach(function(element) {
                     if (typeof data[element].online !== 'undefined' && typeof oldResults[element].online !== 'undefined') {
                         if (oldResults[element].online == 1 && data[element].online == 2) {
@@ -201,6 +217,8 @@ function compareResults(data) {
                         }
                     }
                 });
+            } else {
+                console.log('something fucked up as well [compareResults]');
             }
         }
 
@@ -310,9 +328,9 @@ function isValidJson (jsonString){
         // Neither JSON.parse(false) or JSON.parse(1234) throw errors, hence the type-checking,
         // but... JSON.parse(null) returns 'null', and typeof null === "object",
         // so we must check for that, too.
-        if (o && typeof o === "object" && o !== null) {
-            return true;
-        }
+        //if (o && typeof o === "object" && o !== null) {
+        return true;
+        //}
     }
     catch (e) {
         console.log(e);
