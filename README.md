@@ -1,4 +1,6 @@
 # node-telegram-steamstatusbot
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/shaunidiot/node-telegram-steamstatusbot.svg)](https://greenkeeper.io/)
 A Telegram bot that informs you when Steam or any Game Coordinator is down.
 
 # Requirement
